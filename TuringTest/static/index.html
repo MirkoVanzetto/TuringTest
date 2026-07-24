@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Investigatori Digitali - Test di Turing</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🕵️‍♂️ Investigatori Digitali</h1>
+            <p>Scopri se stai parlando con un umano o con un robot!</p>
+        </header>
+
+        <!-- Pannello di Accesso -->
+        <div id="login-panel" class="card">
+            <h2>Entra in una Stanza</h2>
+            <div class="form-group">
+                <label for="username">Il tuo nome:</label>
+                <input type="text" id="username" placeholder="Es. Marco, Anna..." maxlength="15">
+            </div>
+            <div class="form-group">
+                <label for="room">Nome della stanza (inventalo):</label>
+                <input type="text" id="room" placeholder="Es. stanza-segreta" maxlength="20">
+            </div>
+            <button id="join-btn" class="btn-primary">Entra nella Chat 🚀</button>
+        </div>
+
+        <!-- Pannello della Chat (Inizialmente Nascosto) -->
+        <div id="chat-panel" class="card hidden">
+            <div class="chat-header">
+                <h2>Stanza: <span id="room-display"></span></h2>
+                <button id="leave-btn" class="btn-secondary">Esci</button>
+            </div>
+            
+            <div id="chat-box" class="chat-box" aria-live="polite">
+                <!-- I messaggi verranno inseriti qui dal JS -->
+            </div>
+
+            <div class="input-area">
+                <input type="text" id="message-input" placeholder="Scrivi il tuo messaggio qui..." maxlength="200" autocomplete="off">
+                <button id="send-btn" class="btn-primary">Invia 📨</button>
+            </div>
+            
+            <!-- Pulsante finale per il voto -->
+            <div class="voting-area">
+                <h3>Chi pensi che sia l'altro?</h3>
+                <div class="vote-buttons">
+                    <button class="btn-vote" onclick="alert('Hai votato UMANO! Segnalo sul tuo foglio di indagine.')">🧑 Umano</button>
+                    <button class="btn-vote" onclick="alert('Hai votato ROBOT! Segnalo sul tuo foglio di indagine.')">🤖 Robot</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html>
