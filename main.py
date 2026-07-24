@@ -9,7 +9,10 @@ from typing import Dict, List, Any
 
 app = FastAPI()
 
-# Rotazione delle chiavi API di Groq (da GROQ_API_KEY_1 a GROQ_API_KEY_5 o più)
+# URL del Reverse Proxy su Cloudflare Edge
+CLOUDFLARE_WORKER_URL = "https://icy-term-b6bd.mirko-vanzetto.workers.dev"
+
+# Rotazione delle chiavi API di Groq (da GROQ_API_KEY_1 a GROQ_API_KEY_9)
 GROQ_API_KEYS = [os.getenv(f"GROQ_API_KEY_{i}") for i in range(1, 10) if os.getenv(f"GROQ_API_KEY_{i}")]
 current_key_index = 0
 
@@ -36,6 +39,7 @@ REGOLE TASSATIVE, SEI PROGRAMMATO PER RISPETTARLE:
 async def get_groq_response(messages: List[dict]) -> str:
     api_key = get_next_api_key()
     if not api_key:
+        print("Errore: Nessuna chiave API trovata nell'environment.")
         return "ops mi sa che si è rotta la connessione :("
 
     headers = {
@@ -43,9 +47,8 @@ async def get_groq_response(messages: List[dict]) -> str:
         "Content-Type": "application/json"
     }
     
-    # Utilizzo del modello Llama 3 8B, molto rapido e adeguato per emulare un ragazzino
     payload = {
-        "model": "llama3-8b-8192",
+        "model": "llama-3.1-8b-instant",
         "messages": [{"role": "system", "content": SYSTEM_PROMPT}] + messages,
         "temperature": 0.7,
         "max_tokens": 150
@@ -53,8 +56,9 @@ async def get_groq_response(messages: List[dict]) -> str:
 
     async with httpx.AsyncClient() as client:
         try:
+            # La richiesta viene inoltrata al Worker, che sovrascrive l'host verso api.groq.com
             response = await client.post(
-                "https://api.groq.com/openai/v1/chat/completions", 
+                f"{CLOUDFLARE_WORKER_URL}/openai/v1/chat/completions", 
                 headers=headers, 
                 json=payload, 
                 timeout=15.0
@@ -62,8 +66,11 @@ async def get_groq_response(messages: List[dict]) -> str:
             response.raise_for_status()
             data = response.json()
             return data["choices"][0]["message"]["content"].strip()
+        except httpx.HTTPStatusError as exc:
+            print(f"Errore HTTP Groq (tramite CF): {exc.response.status_code} - {exc.response.text}")
+            return "boh mi si è bloccato internet un attimo"
         except Exception as e:
-            print(f"Errore API Groq: {e}")
+            print(f"Errore API Groq generico (tramite CF): {e}")
             return "boh mi si è bloccato internet un attimo"
 
 @app.websocket("/ws/{room}/{username}")
@@ -109,7 +116,7 @@ async def websocket_endpoint(websocket: WebSocket, room: str, username: str):
                         await client.send_json({"type": "chat", "sender": username, "message": data})
             
             elif rooms[room]["mode"] == "ai":
-                # Salvataggio storia per il contesto (limitato agli ultimi 10 messaggi per non saturare i token)
+                # Salvataggio storia per il contesto (limitato agli ultimi 10 messaggi per non saturare il context window)
                 history = rooms[room]["ai_history"]
                 history.append({"role": "user", "content": data})
                 
@@ -117,7 +124,7 @@ async def websocket_endpoint(websocket: WebSocket, room: str, username: str):
                 typing_delay = random.uniform(1.5, 3.5)
                 await asyncio.sleep(typing_delay)
                 
-                # Chiamata asincrona a Groq
+                # Chiamata asincrona a Groq via Cloudflare Worker
                 ai_reply = await get_groq_response(history[-10:])
                 history.append({"role": "assistant", "content": ai_reply})
                 
