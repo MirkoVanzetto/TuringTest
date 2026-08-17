@@ -48,7 +48,7 @@ async def get_groq_response(messages: List[dict]) -> str:
     }
     
     payload = {
-        "model": "llama-3.1-8b-instant",
+        "model": "qwen/qwen3.6-27b",
         "messages": [{"role": "system", "content": SYSTEM_PROMPT}] + messages,
         "temperature": 0.7,
         "max_tokens": 150
