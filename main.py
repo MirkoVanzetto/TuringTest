@@ -2,7 +2,6 @@ import os
 import random
 import asyncio
 import httpx
-import re
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import HTMLResponse
@@ -49,7 +48,7 @@ async def get_groq_response(messages: List[dict]) -> str:
     }
     
     payload = {
-        "model": "qwen/qwen3.6-27b",
+        "model": "openai/gpt-oss-20b", 
         "messages": [{"role": "system", "content": SYSTEM_PROMPT}] + messages,
         "temperature": 0.7,
         "max_tokens": 150
@@ -66,14 +65,7 @@ async def get_groq_response(messages: List[dict]) -> str:
             )
             response.raise_for_status()
             data = response.json()
-            
-            raw_content = data["choices"][0]["message"]["content"]
-            
-            # Regex per rimuovere <think>...</think> e tutto ciò che c'è in mezzo, su più righe (DOTALL)
-            clean_content = re.sub(r'<think>.*?</think>', '', raw_content, flags=re.DOTALL).strip()
-            
-            return clean_content
-            
+            return data["choices"][0]["message"]["content"].strip()
         except httpx.HTTPStatusError as exc:
             print(f"Errore HTTP Groq (tramite CF): {exc.response.status_code} - {exc.response.text}")
             return "boh mi si è bloccato internet un attimo"
